@@ -10,7 +10,7 @@
 #include <QDialogButtonBox>
 #include <QDebug>
 #include <QDir>
-
+#include <QIntValidator>
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -26,101 +26,92 @@ MainWindow::MainWindow(QWidget *parent)
 
     cargarReservasDesdeArchivo();
 }
+
 MainWindow::~MainWindow() {
     guardarReservasEnArchivo();
     delete ui;
 }
 
 void MainWindow::crearReserva() {
+    if (mesasOcupadas >= totalMesas) {
+        QMessageBox::warning(this, "Mesas llenas", "No hay mesas disponibles.");
+        return;
+    }
 
     bool ok;
     QString nombre = QInputDialog::getText(this, "Crear Reserva", "Nombre del Cliente:", QLineEdit::Normal, "", &ok);
     if (!ok || nombre.isEmpty()) return;
 
-    QString contacto = QInputDialog::getText(this, "Crear Reserva", "Número de Contacto:", QLineEdit::Normal, "", &ok);
-    if (!ok || contacto.isEmpty()) return;
+    // Crear un QLineEdit temporal para la validación de solo números en el campo de contacto
+    QLineEdit *contactoEdit = new QLineEdit(this);
+    QIntValidator *validator = new QIntValidator(0, 9999999999, this);  // Validador solo para números
+    contactoEdit->setValidator(validator);
+
+    QDialog contactoDialog(this);
+    contactoDialog.setWindowTitle("Crear Reserva");
+
+    QVBoxLayout layout1(&contactoDialog);
+    layout1.addWidget(new QLabel("Número de Contacto:"));
+    layout1.addWidget(contactoEdit);
+
+    QDialogButtonBox buttonBox1(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &contactoDialog);
+    connect(&buttonBox1, &QDialogButtonBox::accepted, &contactoDialog, &QDialog::accept);
+    connect(&buttonBox1, &QDialogButtonBox::rejected, &contactoDialog, &QDialog::reject);
+    layout1.addWidget(&buttonBox1);
+
+    if (contactoDialog.exec() != QDialog::Accepted) return;
+
+    QString contacto = contactoEdit->text();
+    if (contacto.isEmpty()) return;
 
     int numComensales = QInputDialog::getInt(this, "Crear Reserva", "Número de Comensales:", 1, 1, 20, 1, &ok);
     if (!ok) return;
 
-    QDialog dialog(this);
-    dialog.setWindowTitle("Seleccionar Fecha y Hora");
+    // Segundo diálogo para fecha y hora
+    QDialog fechaHoraDialog(this);
+    fechaHoraDialog.setWindowTitle("Seleccionar Fecha y Hora");
 
-    QVBoxLayout layout(&dialog);
-
-    QDateEdit dateEdit(QDate::currentDate(), &dialog);
+    QVBoxLayout layout2(&fechaHoraDialog);
+    QDateEdit dateEdit(QDate::currentDate(), &fechaHoraDialog);
     dateEdit.setCalendarPopup(true);
-    layout.addWidget(&dateEdit);
+    layout2.addWidget(&dateEdit);
 
-    QTimeEdit timeEdit(QTime::currentTime(), &dialog);
-    layout.addWidget(&timeEdit);
+    QTimeEdit timeEdit(QTime::currentTime(), &fechaHoraDialog);
+    layout2.addWidget(&timeEdit);
 
-    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
-    connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
-    connect(&buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
-    layout.addWidget(&buttonBox);
+    QDialogButtonBox buttonBox2(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &fechaHoraDialog);
+    connect(&buttonBox2, &QDialogButtonBox::accepted, &fechaHoraDialog, &QDialog::accept);
+    connect(&buttonBox2, &QDialogButtonBox::rejected, &fechaHoraDialog, &QDialog::reject);
+    layout2.addWidget(&buttonBox2);
 
-    if (dialog.exec() != QDialog::Accepted) return;
+    if (fechaHoraDialog.exec() != QDialog::Accepted) return;
 
     QDate fecha = dateEdit.date();
     QTime hora = timeEdit.time();
 
+    // Crear un número de referencia único
     QString numeroReferencia = "REF" + QString::number(reservas.size() + 1);
 
     Reserva nuevaReserva = {nombre, contacto, numComensales, fecha, hora, numeroReferencia};
 
     if (!verificarConflictoReserva(nuevaReserva)) {
         reservas.append(nuevaReserva);
+        mesasOcupadas++;  // Incrementar mesas ocupadas
         guardarReservasEnArchivo();
-        QMessageBox::information(this, "Reserva Creada", "La reserva ha sido creada exitosamente.");
+
+        // Mostrar el mensaje de confirmación con el número de referencia
+        QMessageBox::information(this, "Reserva Creada",
+                                 QString("La reserva ha sido creada exitosamente.\nNúmero de Referencia: %1").arg(numeroReferencia));
     } else {
         mostrarAlternativasReserva(nuevaReserva);
     }
 }
 
+
 void MainWindow::consultarDisponibilidad() {
-    bool ok;
+    QString disponibilidad = QString("Mesas disponibles: %1 / %2\n").arg(totalMesas - mesasOcupadas).arg(totalMesas);
 
-
-    QDialog dialog(this);
-    dialog.setWindowTitle("Consultar Disponibilidad");
-
-    QVBoxLayout layout(&dialog);
-
-    QDateEdit dateEdit(QDate::currentDate(), &dialog);
-    dateEdit.setCalendarPopup(true);
-    layout.addWidget(&dateEdit);
-
-    QTimeEdit timeEdit(QTime::currentTime(), &dialog);
-    layout.addWidget(&timeEdit);
-
-    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
-    connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
-    connect(&buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
-    layout.addWidget(&buttonBox);
-
-    if (dialog.exec() != QDialog::Accepted) return;
-
-    QDate fecha = dateEdit.date();
-    QTime hora = timeEdit.time();
-
-    QString disponibilidad = "Mesas disponibles:\n";
-    bool hayDisponibilidad = false;
-
-    for (const Reserva& reserva : reservas) {
-        if (reserva.fecha == fecha && reserva.hora == hora) {
-            disponibilidad += "Mesa ocupada\n";
-        } else {
-            disponibilidad += "Mesa disponible\n";
-            hayDisponibilidad = true;
-        }
-    }
-
-    if (!hayDisponibilidad) {
-        QMessageBox::information(this, "Disponibilidad", "No hay mesas disponibles para el horario seleccionado.");
-    } else {
-        QMessageBox::information(this, "Disponibilidad", disponibilidad);
-    }
+    QMessageBox::information(this, "Disponibilidad", disponibilidad);
 }
 
 void MainWindow::modificarReserva() {
@@ -140,7 +131,6 @@ void MainWindow::modificarReserva() {
 
             reserva.numComensales = QInputDialog::getInt(this, "Modificar Reserva", "Número de Comensales:", reserva.numComensales, 1, 20, 1, &ok);
             if (!ok) return;
-
 
             QDialog dialog(this);
             dialog.setWindowTitle("Modificar Fecha y Hora");
@@ -186,6 +176,7 @@ void MainWindow::cancelarReserva() {
     for (int i = 0; i < reservas.size(); ++i) {
         if (reservas[i].numeroReferencia == numeroReferencia) {
             reservas.removeAt(i);
+            mesasOcupadas--;  // Decrementar mesas ocupadas
             guardarReservasEnArchivo();
             reservaEliminada = true;
             QMessageBox::information(this, "Reserva Cancelada", "La reserva ha sido cancelada exitosamente.");
@@ -216,12 +207,12 @@ void MainWindow::guardarReservasEnArchivo() {
     }
 }
 
-
 void MainWindow::cargarReservasDesdeArchivo() {
     QFile file("reservas.txt");
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
         reservas.clear();
+        mesasOcupadas = 0;  // Resetear mesas ocupadas
         while (!in.atEnd()) {
             QString line = in.readLine();
             QStringList fields = line.split(",");
@@ -234,6 +225,7 @@ void MainWindow::cargarReservasDesdeArchivo() {
                 r.hora = QTime::fromString(fields[4], Qt::ISODate);
                 r.numeroReferencia = fields[5];
                 reservas.append(r);
+                mesasOcupadas++;  // Incrementar mesas ocupadas al cargar
             }
         }
         file.close();
@@ -241,7 +233,6 @@ void MainWindow::cargarReservasDesdeArchivo() {
         QMessageBox::information(this, "Información", "No se encontró el archivo de reservas. Se creará uno nuevo al guardar.");
     }
 }
-
 
 bool MainWindow::verificarConflictoReserva(const Reserva& nuevaReserva) {
     for (const Reserva& reserva : reservas) {
@@ -265,3 +256,4 @@ void MainWindow::mostrarAlternativasReserva(const Reserva& nuevaReserva) {
 
     QMessageBox::information(this, "Alternativas de Reserva", alternativas);
 }
+

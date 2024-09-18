@@ -10,7 +10,6 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
-
 struct Reserva {
     QString nombre;
     QString contacto;
@@ -36,6 +35,10 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QVector<Reserva> reservas;
+
+    // Nuevas variables para las mesas
+    const int totalMesas = 10;
+    int mesasOcupadas = 0;
 
     void guardarReservasEnArchivo();
     void cargarReservasDesdeArchivo();
