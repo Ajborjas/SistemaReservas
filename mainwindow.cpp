@@ -11,6 +11,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QIntValidator>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -42,9 +43,8 @@ void MainWindow::crearReserva() {
     QString nombre = QInputDialog::getText(this, "Crear Reserva", "Nombre del Cliente:", QLineEdit::Normal, "", &ok);
     if (!ok || nombre.isEmpty()) return;
 
-    // Crear un QLineEdit temporal para la validación de solo números en el campo de contacto
     QLineEdit *contactoEdit = new QLineEdit(this);
-    QIntValidator *validator = new QIntValidator(0, 9999999999, this);  // Validador solo para números
+    QIntValidator *validator = new QIntValidator(0, 9999999999, this);
     contactoEdit->setValidator(validator);
 
     QDialog contactoDialog(this);
@@ -67,7 +67,6 @@ void MainWindow::crearReserva() {
     int numComensales = QInputDialog::getInt(this, "Crear Reserva", "Número de Comensales:", 1, 1, 20, 1, &ok);
     if (!ok) return;
 
-    // Segundo diálogo para fecha y hora
     QDialog fechaHoraDialog(this);
     fechaHoraDialog.setWindowTitle("Seleccionar Fecha y Hora");
 
@@ -89,24 +88,21 @@ void MainWindow::crearReserva() {
     QDate fecha = dateEdit.date();
     QTime hora = timeEdit.time();
 
-    // Crear un número de referencia único
     QString numeroReferencia = "REF" + QString::number(reservas.size() + 1);
 
     Reserva nuevaReserva = {nombre, contacto, numComensales, fecha, hora, numeroReferencia};
 
     if (!verificarConflictoReserva(nuevaReserva)) {
         reservas.append(nuevaReserva);
-        mesasOcupadas++;  // Incrementar mesas ocupadas
+        mesasOcupadas++;
         guardarReservasEnArchivo();
 
-        // Mostrar el mensaje de confirmación con el número de referencia
         QMessageBox::information(this, "Reserva Creada",
                                  QString("La reserva ha sido creada exitosamente.\nNúmero de Referencia: %1").arg(numeroReferencia));
     } else {
         mostrarAlternativasReserva(nuevaReserva);
     }
 }
-
 
 void MainWindow::consultarDisponibilidad() {
     QString disponibilidad = QString("Mesas disponibles: %1 / %2\n").arg(totalMesas - mesasOcupadas).arg(totalMesas);
@@ -176,7 +172,7 @@ void MainWindow::cancelarReserva() {
     for (int i = 0; i < reservas.size(); ++i) {
         if (reservas[i].numeroReferencia == numeroReferencia) {
             reservas.removeAt(i);
-            mesasOcupadas--;  // Decrementar mesas ocupadas
+            mesasOcupadas--;
             guardarReservasEnArchivo();
             reservaEliminada = true;
             QMessageBox::information(this, "Reserva Cancelada", "La reserva ha sido cancelada exitosamente.");
@@ -212,7 +208,7 @@ void MainWindow::cargarReservasDesdeArchivo() {
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
         reservas.clear();
-        mesasOcupadas = 0;  // Resetear mesas ocupadas
+        mesasOcupadas = 0;
         while (!in.atEnd()) {
             QString line = in.readLine();
             QStringList fields = line.split(",");
@@ -225,7 +221,7 @@ void MainWindow::cargarReservasDesdeArchivo() {
                 r.hora = QTime::fromString(fields[4], Qt::ISODate);
                 r.numeroReferencia = fields[5];
                 reservas.append(r);
-                mesasOcupadas++;  // Incrementar mesas ocupadas al cargar
+                mesasOcupadas++;
             }
         }
         file.close();
@@ -236,8 +232,12 @@ void MainWindow::cargarReservasDesdeArchivo() {
 
 bool MainWindow::verificarConflictoReserva(const Reserva& nuevaReserva) {
     for (const Reserva& reserva : reservas) {
-        if (reserva.fecha == nuevaReserva.fecha && reserva.hora == nuevaReserva.hora) {
-            return true;
+        if (reserva.fecha == nuevaReserva.fecha) {
+
+            int tiempoDiferencia = reserva.hora.secsTo(nuevaReserva.hora) / 60;
+            if (qAbs(tiempoDiferencia) < 90) {
+                return true;
+            }
         }
     }
     return false;
@@ -256,4 +256,3 @@ void MainWindow::mostrarAlternativasReserva(const Reserva& nuevaReserva) {
 
     QMessageBox::information(this, "Alternativas de Reserva", alternativas);
 }
-
