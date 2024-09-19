@@ -17,8 +17,8 @@
    <widget class="QPushButton" name="btnCrearReserva">
     <property name="geometry">
      <rect>
-      <x>470</x>
-      <y>150</y>
+      <x>310</x>
+      <y>140</y>
       <width>181</width>
       <height>29</height>
      </rect>
@@ -30,8 +30,8 @@
    <widget class="QPushButton" name="btnConsultarDisponibilidad">
     <property name="geometry">
      <rect>
-      <x>470</x>
-      <y>200</y>
+      <x>310</x>
+      <y>190</y>
       <width>181</width>
       <height>29</height>
      </rect>
@@ -43,8 +43,8 @@
    <widget class="QPushButton" name="btnModificarReserva">
     <property name="geometry">
      <rect>
-      <x>470</x>
-      <y>250</y>
+      <x>310</x>
+      <y>240</y>
       <width>181</width>
       <height>29</height>
      </rect>
@@ -56,8 +56,8 @@
    <widget class="QPushButton" name="btnCancelarReserva">
     <property name="geometry">
      <rect>
-      <x>470</x>
-      <y>300</y>
+      <x>310</x>
+      <y>290</y>
       <width>181</width>
       <height>29</height>
      </rect>
@@ -69,14 +69,14 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>460</x>
+      <x>300</x>
       <y>70</y>
       <width>451</width>
       <height>81</height>
      </rect>
     </property>
     <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:16pt;&quot;&gt;                         Sistema de Reservas&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:16pt; color:#ffffff;&quot;&gt;Sistema de Reservas&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
   </widget>
@@ -86,7 +86,7 @@
      <x>0</x>
      <y>0</y>
      <width>1140</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>

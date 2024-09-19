@@ -11,6 +11,8 @@
 #include <QDebug>
 #include <QDir>
 #include <QIntValidator>
+#include <QPixmap>
+#include <QPalette>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -19,6 +21,17 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     qDebug() << "Directorio de trabajo actual: " << QDir::currentPath();
+
+
+    QPixmap bkgnd(":/new/prefix1/resources/SistemaReservasImagen.jpg");
+    if (!bkgnd.isNull()) {
+        bkgnd = bkgnd.scaled(this->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        QPalette palette;
+        palette.setBrush(QPalette::Window, bkgnd);
+        this->setPalette(palette);
+    } else {
+        qDebug() << "No se pudo cargar la imagen de fondo.";
+    }
 
     connect(ui->btnCrearReserva, &QPushButton::clicked, this, &MainWindow::crearReserva);
     connect(ui->btnConsultarDisponibilidad, &QPushButton::clicked, this, &MainWindow::consultarDisponibilidad);
@@ -32,6 +45,7 @@ MainWindow::~MainWindow() {
     guardarReservasEnArchivo();
     delete ui;
 }
+
 
 void MainWindow::crearReserva() {
     if (mesasOcupadas >= totalMesas) {
@@ -103,7 +117,6 @@ void MainWindow::crearReserva() {
         mostrarAlternativasReserva(nuevaReserva);
     }
 }
-
 void MainWindow::consultarDisponibilidad() {
     QString disponibilidad = QString("Mesas disponibles: %1 / %2\n").arg(totalMesas - mesasOcupadas).arg(totalMesas);
 
