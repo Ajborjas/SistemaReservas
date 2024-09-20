@@ -9,10 +9,10 @@ Login::Login(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    // Aplicar hoja de estilo para cambiar el color de fondo del login
-    this->setStyleSheet("background-color: #ADD8E6;");  // Cambia el color por el que prefieras
 
-    // Hacer que el campo de la contraseña oculte los caracteres
+    this->setStyleSheet("background-color: #ADD8E6;");
+
+
     ui->passwordLineEdit->setEchoMode(QLineEdit::Password);
 }
 
